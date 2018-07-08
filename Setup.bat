@@ -1,0 +1,1 @@
+pyinstaller --onefile --icon=icon.ico --clean --name Songrequest.exe main.py
