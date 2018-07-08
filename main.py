@@ -1,6 +1,7 @@
 import logging
+import _thread
 
-from packets import configuration, connect, songrequest, ascii_art, commands, playlist, skip
+from packets import configuration, connect, songrequest, ascii_art, commands, playlist, skip, privatelist
 from packets.configuration import config
 import os
 
@@ -25,15 +26,24 @@ connect.connect(
 send = connect.send
 ircsock = connect.ircsock
 users = 0
+mainchannel = config['irc']['channels'][0]
 op = connect.define_ops(
-    config['irc']['channels'][0].strip('#')
+    mainchannel.strip('#')
     )
-while 1:
-    ircmsg = ircsock.recv(4096).decode('UTF-8')
 
-    temp = ircmsg.split('\n')
-    ircmsg = temp.pop()
-    try:
+print('operators: ' + ' '.join(op))
+
+_privatelistconfig = config['playlist']['private_playlist']
+if _privatelistconfig['autoplay_playlist']:
+    _thread.start_new_thread(privatelist.privatelist, (mainchannel.strip('#'), _privatelistconfig['shuffle'],))
+    
+while True:
+    try:       
+        ircmsg = ircsock.recv(4096).decode('UTF-8')
+
+        temp = ircmsg.split('\n')
+        ircmsg = temp.pop()
+    
         for line in temp:
             line = line.rstrip()
 
@@ -45,7 +55,7 @@ while 1:
 
             if line.startswith("PING"):
                 send("PONG " + line.split(':')[1] + "\r\n")
-                
+            
             data = line.split(' ')
             if len(data) < 2:
                 continue
@@ -71,4 +81,3 @@ while 1:
                 
     except:
         logging.exception('Got exception on main handler')
-        raise
