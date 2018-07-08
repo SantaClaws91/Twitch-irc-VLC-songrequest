@@ -81,7 +81,7 @@ def skip_handling(user, config):
     skip_votes[id_]['voters'].append(user)
     skippers = len(skip_votes[id_]['voters'])
 
-    if not skippers >= skip_requirement:
+    if skip_requirement > skippers:
         if (skip_requirement - skippers) % 3 == 0:
             for chan in config['irc']['channels']:
                 sendmsg(

@@ -146,7 +146,7 @@ def command_handling(data, user, op, config):
     elif command in config['irc']['songrequest']['cmd']:
         if not arguments:
             return
-        songrequest(channel, user, op, config['vlc']['vlc_path'], arguments)
+        songrequest(channel, user, op, arguments)
         return
         
     #Admin commands:

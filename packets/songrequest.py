@@ -23,7 +23,80 @@ def matchYou(youtubelink):
             return matchYou
     return ''
 
-def songrequest(channel, user, op, vlc_path, youtubelink):
+def play_song(youtube_info, user, channel):
+    if not youtube_info:
+        return
+    youtubelink = "https://www.youtube.com/watch?v=" + youtube_info['id']
+
+    title = youtube_info['title']
+    glink = youtube_info['url']
+
+    if youtubelink in songs:
+        print("Song " + youtubelink + " has already been requested once.")
+        return
+    
+    if not glink.startswith("https://"):
+        print(
+            "Unknown error occured during converting stream. Update youtube-dl or contact nejtilsvampe."
+            )
+        return
+
+    sendmsg(channel, title + ", Requested by: "+ user)
+
+    config = configuration.readconfig()
+    vlc_options = config['vlc']['vlc_options']
+    vlc_path = config['vlc']['vlc_path']
+
+    subprocess.Popen(
+        [ vlc_path ]
+        + vlc_options
+        + [
+            glink,
+            ":meta-title={}".format(title)
+            ]
+        )
+
+    songs[youtubelink] = {
+        'id': len(songs) + 1,
+        'link': youtubelink,
+        'title': title,
+        'uri': glink,
+        'duration': youtube_info['duration'],
+        'category': youtube_info["categories"][0],
+        'user': user
+        }
+        
+    sruser[user]=datetime.now()
+
+    if config['playlist']['autoresume'] != True:
+        return
+    
+    #Auto Resume Check:
+    web_pw = config['vlc']['web_intf']['password']
+    web_host = config['vlc']['web_intf']['host']
+
+    if not web_pw:
+        return
+    
+    state = playlist.check_going(
+        playlist.getPlayerInfo(
+            web_host,
+            web_pw
+            )
+        )
+    if state:
+        return
+
+    time.sleep(0.5)
+
+    playlist.auto_resume(
+        glink,
+        web_host,
+        web_pw,
+        title
+        )
+
+def songrequest(channel, user, op, youtubelink):
     print(
         "\nAttempting to play: {}\nRequested by: {}\n"
         .format(youtubelink, user)
@@ -58,9 +131,7 @@ def songrequest(channel, user, op, vlc_path, youtubelink):
                 return
 
     youtube_info = youtube.get_youtube_info(youtubelink)
-    if not youtube_info:
-        return
-    youtubelink = "https://www.youtube.com/watch?v=" + youtube_info['id']
+
     title = youtube_info['title']
     if title:
         safeprint("Video title: {}".format(title))
@@ -70,7 +141,7 @@ def songrequest(channel, user, op, vlc_path, youtubelink):
     if not config['youtube']['category_whitelist'][0].lower() == 'all':
         if not category in config['youtube']['category_whitelist']:
             safeprint(
-                "Request denied. Video titled: {} is not classified as Music".format(title))
+                "Request denied. Video titled: {}'s category is not whitelisted".format(title))
             return
 
     duration = youtube_info['duration']
@@ -89,65 +160,4 @@ def songrequest(channel, user, op, vlc_path, youtubelink):
               )
         return
     
-    glink = youtube_info['url']
-    
-    if not glink.startswith("https://"):
-        print(
-            "Unknown error occured during converting stream. Update youtube-dl or contact nejtilsvampe."
-            )
-        return
-
-    sendmsg(channel, title + ", Requested by: "+ user)
-
-    vlc_options = config['vlc']['vlc_options']
-
-    subprocess.Popen(
-        [ vlc_path ]
-        + vlc_options
-        + [
-            glink,
-            ":meta-title={}".format(title)
-            ]
-        )
-
-    songs[youtubelink] = {
-        'id': len(songs) + 1,
-        'link': youtubelink,
-        'title': title,
-        'uri': glink,
-        'duration': duration,
-        'category': category,
-        'user': user
-        }
-        
-    sruser[user]=datetime.now()
-
-    if config['playlist']['autoresume'] != True:
-        return
-    
-    #Auto Resume Check:
-    web_pw = config['vlc']['web_intf']['password']
-    web_host = config['vlc']['web_intf']['host']
-
-    if not web_pw:
-        return
-    
-    state = playlist.getPlayerInfo(
-        web_host,
-        web_pw
-        )
-
-    if not 'state' in state:
-        return
-
-    if state['state'] != 'stopped':
-        return
-
-    time.sleep(0.05)
-
-    playlist.auto_resume(
-        glink,
-        web_host,
-        web_pw,
-        title
-        )
+    play_song(youtube_info, user, channel)

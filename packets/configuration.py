@@ -43,6 +43,11 @@ default_yaml = {
         ]
   },
   "playlist": {
+     "private_playlist": {
+        "youtubelink": '',
+        "autoplay_playlist": False,
+        "shuffle": True
+         },
      "skip": {
         "skip_conditions": "4 + {c} // 20",
         "skip_minimum": 2
@@ -84,6 +89,9 @@ def de_con_ice(config):
         for string3 in default_yaml[string][string2]:
             if not string3 in config[string][string2]:
                 config[string][string2][string3] = default_yaml[string][string2][string3]
+        for string4 in default_yaml[string][string2][string3]:
+            if not string4 in config[string][string2][string3]:
+                config[string][string2][string3][string4] = default_yaml[string][string2][string3][string4]
         return config
     except Exception:
         return config

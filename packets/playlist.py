@@ -5,7 +5,7 @@ from urllib.parse import quote_plus
 
 def request_webvlc(password):
     s = requests.Session()
-    s.auth = ('', password)# Username is blank, just provide the password
+    s.auth = ('', password)     # Username is blank, just provide the password
     return s
 
 def getPlayerInfo(host, password):
@@ -14,8 +14,6 @@ def getPlayerInfo(host, password):
         r = request.get(host + 'requests/status.json', verify=False)
         return r.json()
     except Exception:
-        print('Request to load player info malfunctioned. Make sure vlc settings are configured properly or contact nejtilsvampe')
-        print("host: {}\npassword: {}".format(host, password))
         return {}
     
 def getPlayList(host, password):
@@ -59,7 +57,7 @@ def pause_song(host, password):
     command = '?command=pl_forcepause'
     send_command(host, password, command)
 
-#   Unfortunately, adding songs this way doesn't allow me to change the meta title.
+#   Unfortunately, adding songs this way doesn't allow me to change the meta data.
 #   So for now, do not use this. However, in the future it might allow for remote bots to be an option.
 def add_song(mrl, host, password):
     gurl = quote_plus(mrl)
@@ -100,6 +98,13 @@ def next_song_info(playlist):
             return next_song
     return {}
 
+def check_going(playerinfo):
+    if not 'state' in playerinfo:
+        return False
+    if playerinfo['state'] == 'stopped':
+        return False
+    return True
+
 def auto_resume(glink, host, password, title):
     print('Attempting auto-resume...')
     id_ = ''
@@ -126,4 +131,4 @@ def auto_resume(glink, host, password, title):
     print('Attempting workaround...')
 
     play_id(host, password, '')
-    skip_song(host, password)
+    skip_song(host, password, playlist_)
